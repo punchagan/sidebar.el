@@ -198,6 +198,7 @@ is open automatically with elfeed."
     (define-key map (kbd "q") 'sidebar-elfeed-quit)
     (define-key map (kbd "n") 'next-line)
     (define-key map (kbd "p") 'previous-line)
+    (define-key map (kbd "g") 'sidebar-refresh)
     (define-key map (kbd "G") 'elfeed-search-fetch)
     (define-key map (kbd "RET") 'sidebar-elfeed-open-line)
     (define-key map (kbd "U") 'sidebar-elfeed-update-feed)
