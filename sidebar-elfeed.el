@@ -22,6 +22,7 @@
 (require 'elfeed)
 (require 'sidebar-utils)
 (require 'url-parse)
+(require 'subr-x)
 
 (declare-function elfeed-search-set-filter "ext:elfeed.el")
 (declare-function sidebar-init-mode "ext:sidebar.el")
@@ -29,6 +30,7 @@
 (declare-function sidebar-open "ext:sidebar.el")
 (declare-function icons-in-terminal "ext:sidebar.el")
 (declare-function url-host "ext:url-parse.el")
+(declare-function hash-table-values "ext:subr-x.el")
 (defvar elfeed-feeds)
 
 (defgroup sidebar-elfeed nil
@@ -70,18 +72,19 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 (sidebar-content-provider elfeed (&rest _)
   ;; List of items processed by sidebar-elfeed-item-builder
   (sidebar-set elfeed-feeds-count (length elfeed-feeds))
-  elfeed-feeds)
+  (hash-table-values elfeed-db-feeds))
 
-(defun sidebar-elfeed-item-builder (item)
-  "Return an association list from ITEM.
+(defun sidebar-elfeed-item-builder (feed)
+  "Return an association list from FEED.
 Function similar to `sidebar-file-struct' adapted for elfeed data."
-  (list (cons 'data (car item))
+  (list (cons 'title (or (elfeed-feed-title feed) (elfeed-meta feed :title)))
+        (cons 'url (elfeed-feed-url feed))
         (cons 'type 'feed)
         (cons 'line 0)))
 
 (sidebar-print-function elfeed (item)
   "ITEM."
-  (-let* (((&alist 'data data 'type type) item))
+  (-let* (((&alist 'title title 'type type) item))
     (if (eq type 'separator)
         (ignore (overlay-put (make-overlay (point) (point)) 'after-string "\n"))
       (concat
@@ -90,7 +93,7 @@ Function similar to `sidebar-file-struct' adapted for elfeed data."
          ('feed (icons-in-terminal sidebar-elfeed-feed-icon :height 1.1)))
        " "
        (pcase type
-         ('feed  data))
+         ('feed  title))
        "\n"))))
 
 (defun sidebar-elfeed-make-header ()
@@ -123,15 +126,14 @@ Function similar to `sidebar-file-struct' adapted for elfeed data."
 (defun sidebar-elfeed-open-line ()
   "Open the feed on the current line."
   (interactive)
-  (-let* (((&alist 'data data 'type type) (sidebar-find-file-from-line)))
+  (-let* (((&alist 'url url 'type type) (sidebar-find-file-from-line)))
     (select-window (sidebar-get window-origin))
     (pcase type
-      ('feed  (sidebar-elfeed-open-feed data)))))
+      ('feed (sidebar-elfeed-open-feed url)))))
 
-(defun sidebar-elfeed-open-feed (feed)
-  "Filter to the selected FEED."
-  (let ((host (url-host (url-generic-parse-url feed))))
-    (elfeed-search-set-filter host)))
+(defun sidebar-elfeed-open-feed (url)
+  "Filter to the selected feed based on URL."
+  (elfeed-search-set-filter (format "=%s" url)))
 
 (defun sidebar-elfeed-quit (&rest _)
   "Function called when elfeed quits.
