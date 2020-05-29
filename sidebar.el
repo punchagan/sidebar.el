@@ -48,6 +48,7 @@
 (require 'sidebar-face)
 (require 'sidebar-mu4e)
 (require 'sidebar-buffers)
+(require 'sidebar-elfeed)
 
 (defvar sidebar-insert-fileicon-function 'sidebar-insert-fileicon)
 
@@ -765,6 +766,16 @@ returns an error on terminals."
      (sidebar-restore-function             . nil)
      (sidebar-print-item                   . sidebar-print-mu4e)
      (sidebar-line-to-start                . 1))
+    :sidebar-elfeed-mode
+    ((sidebar-load-content-function        . sidebar-content-elfeed)
+     (sidebar-mode-to-use                  . sidebar-elfeed-mode)
+     (sidebar-make-header-function         . sidebar-elfeed-make-header)
+     (sidebar-make-modeline-left-function  . sidebar-elfeed-make-modeline-left)
+     (sidebar-make-modeline-right-function . sidebar-elfeed-make-modeline-right)
+     (sidebar-item-builder-function        . sidebar-elfeed-item-builder)
+     (sidebar-restore-function             . nil)
+     (sidebar-print-item                   . sidebar-print-elfeed)
+     (sidebar-line-to-start                . 1))
     :sidebar-buffers-mode
     ((sidebar-load-content-function        . sidebar-content-buffers)
      (sidebar-mode-to-use                  . sidebar-buffers-mode)
@@ -782,8 +793,9 @@ returns an error on terminals."
   "Initialize the variables on sidebar startup.
 PROJECT-PATH-ROOT."
   (let ((mode (cond ((sidebar-mu4e?)    :sidebar-mu4e-mode)
-		            ((sidebar-buffers?) :sidebar-buffers-mode)
-		            (t                  :sidebar-mode))))
+                    ((sidebar-elfeed?)  :sidebar-elfeed-mode)
+                    ((sidebar-buffers?) :sidebar-buffers-mode)
+                    (t                  :sidebar-mode))))
     (--each (plist-get sidebar-mode-association mode)
       (sidebar-set1 (car it) (cdr it))))
   (if (and (sidebar-get restore-function) (sidebar-get saved-state-files))
