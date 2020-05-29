@@ -52,8 +52,16 @@ More precisely, it is started when `elfeed' is called."
   :type 'boolean
   :group 'sidebar-elfeed)
 
-(defcustom sidebar-elfeed-feed-icon 'fa_rss_square
-  "Icon to use with feeds.
+(defcustom sidebar-elfeed-feed-icon 'oct_rss
+  "Icon to use with feeds that have no unreads.
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
+  :group 'sidebar-elfeed)
+
+(defcustom sidebar-elfeed-unread-feed-icon 'fa_rss_square
+  "Icon to use with feeds with unreads.
 To get a list of the icons names, you can run:
  `~/.local/share/icons-in-terminal/print_icons.sh --names'
 More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
@@ -118,7 +126,9 @@ Function similar to `sidebar-file-struct' adapted for elfeed data."
       (concat
        " "
        (pcase type
-         ('feed (icons-in-terminal sidebar-elfeed-feed-icon :height 1.0)))
+         ('feed (let ((icon (if unread sidebar-elfeed-unread-feed-icon
+                              sidebar-elfeed-feed-icon)))
+                  (icons-in-terminal icon :height 1.0))))
        " "
        (pcase type
          ('feed (if unread (format "%s (%s)" title unread)
