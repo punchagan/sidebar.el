@@ -164,6 +164,8 @@ is open automatically with elfeed."
   (let ((map (make-sparse-keymap)))
     (suppress-keymap map t)
     (define-key map (kbd "q") 'sidebar-elfeed-quit)
+    (define-key map (kbd "n") 'next-line)
+    (define-key map (kbd "p") 'previous-line)
     (define-key map (kbd "G") 'elfeed-search-fetch)
     (define-key map (kbd "RET") 'sidebar-elfeed-open-line)
     (define-key map (kbd "<right>") 'sidebar-adjust-window-width)
