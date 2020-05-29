@@ -77,19 +77,42 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 (sidebar-content-provider elfeed (&rest _)
   ;; List of items processed by sidebar-elfeed-item-builder
   (sidebar-set elfeed-feeds-count (length elfeed-feeds))
-  (hash-table-values elfeed-db-feeds))
+  (sidebar-elfeed-compute-unreads)
+  )
 
-(defun sidebar-elfeed-item-builder (feed)
-  "Return an association list from FEED.
+(defun sidebar-elfeed-compute-unreads ()
+  "Compute all the unreads per feed."
+  (with-current-buffer (elfeed-search-buffer)
+    (elfeed-search-set-filter "+unread")
+    (elfeed-search--update-list)
+    (cl-loop with feeds = (make-hash-table :test 'equal)
+           for entry in elfeed-search-entries
+           for feed = (elfeed-entry-feed entry)
+           for url = (elfeed-feed-url feed)
+           for feed-unread-count = (gethash url feeds 0)
+           count entry into entry-count
+           count (elfeed-tagged-p 'unread entry) into unread-count
+           do (puthash url (1+ feed-unread-count) feeds)
+           finally
+           (cl-return
+            (cl-mapcar (lambda (f)
+                         (list (cons 'feed f)
+                                         (cons 'unread (gethash (elfeed-feed-url f) feeds))))
+                       (hash-table-values elfeed-db-feeds))))))
+
+(defun sidebar-elfeed-item-builder (item)
+  "Return an association list from ITEM.
 Function similar to `sidebar-file-struct' adapted for elfeed data."
-  (list (cons 'title (or (elfeed-feed-title feed) (elfeed-meta feed :title)))
-        (cons 'url (elfeed-feed-url feed))
-        (cons 'type 'feed)
-        (cons 'line 0)))
+  (-let* (((&alist 'feed feed 'unread unread) item))
+    (list (cons 'title (or (elfeed-feed-title feed) (elfeed-meta feed :title)))
+          (cons 'unread unread)
+          (cons 'url (elfeed-feed-url feed))
+          (cons 'type 'feed)
+          (cons 'line 0))))
 
 (sidebar-print-function elfeed (item)
   "ITEM."
-  (-let* (((&alist 'title title 'type type) item))
+  (-let* (((&alist 'title title 'type type 'unread unread) item))
     (if (eq type 'separator)
         (ignore (overlay-put (make-overlay (point) (point)) 'after-string "\n"))
       (concat
@@ -98,7 +121,8 @@ Function similar to `sidebar-file-struct' adapted for elfeed data."
          ('feed (icons-in-terminal sidebar-elfeed-feed-icon :height 1.0)))
        " "
        (pcase type
-         ('feed  title))
+         ('feed (if unread (format "%s (%s)" title unread)
+                  title)))
        "\n"))))
 
 (defun sidebar-elfeed-make-header ()
