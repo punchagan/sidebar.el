@@ -60,6 +60,11 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   :type 'symbol
   :group 'sidebar-elfeed)
 
+(defcustom sidebar-elfeed-filter-extra "#10 +unread"
+  "Extra search filter params to set along with feed url."
+  :type 'symbol
+  :group 'sidebar-elfeed)
+
 (defun sidebar-elfeed? ()
   "Return non-nil if we have to use `sidebar-elfeed-mode' on the sidebar creation."
   (prog1
@@ -133,7 +138,7 @@ Function similar to `sidebar-file-struct' adapted for elfeed data."
 
 (defun sidebar-elfeed-open-feed (url)
   "Filter to the selected feed based on URL."
-  (elfeed-search-set-filter (format "=%s" url)))
+  (elfeed-search-set-filter (format "=%s %s" url sidebar-elfeed-filter-extra)))
 
 (defun sidebar-elfeed-quit (&rest _)
   "Function called when elfeed quits.
