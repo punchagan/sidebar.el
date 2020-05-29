@@ -141,6 +141,13 @@ Function similar to `sidebar-file-struct' adapted for elfeed data."
   (elfeed-search-set-filter (format "=%s %s" url sidebar-elfeed-filter-extra))
   (elfeed-search-first-entry))
 
+(defun sidebar-elfeed-update-feed ()
+  "Update the feed on the current line."
+  (interactive)
+  (-let* (((&alist 'url url 'type type) (sidebar-find-file-from-line)))
+    (pcase type
+      ('feed (elfeed-update-feed url)))))
+
 (defun sidebar-elfeed-quit (&rest _)
   "Function called when elfeed quits.
 It removes the sidebar."
@@ -168,6 +175,7 @@ is open automatically with elfeed."
     (define-key map (kbd "p") 'previous-line)
     (define-key map (kbd "G") 'elfeed-search-fetch)
     (define-key map (kbd "RET") 'sidebar-elfeed-open-line)
+    (define-key map (kbd "U") 'sidebar-elfeed-update-feed)
     (define-key map (kbd "<right>") 'sidebar-adjust-window-width)
     (define-key map (kbd "<left>") 'sidebar-reset-window-width)
     (define-key map (kbd "?") 'sidebar-help)
