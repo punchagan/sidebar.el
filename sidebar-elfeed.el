@@ -105,8 +105,8 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
            (cl-return
             (cl-mapcar (lambda (f)
                          (list (cons 'feed f)
-                                         (cons 'unread (gethash (elfeed-feed-url f) feeds))))
-                       (hash-table-values elfeed-db-feeds))))))
+                               (cons 'unread (gethash (elfeed-feed-url f) feeds))))
+                       (-map (lambda (item) (gethash (car item) elfeed-db-feeds)) elfeed-feeds))))))
 
 (defun sidebar-elfeed-item-builder (item)
   "Return an association list from ITEM.
