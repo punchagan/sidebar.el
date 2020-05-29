@@ -138,7 +138,8 @@ Function similar to `sidebar-file-struct' adapted for elfeed data."
 
 (defun sidebar-elfeed-open-feed (url)
   "Filter to the selected feed based on URL."
-  (elfeed-search-set-filter (format "=%s %s" url sidebar-elfeed-filter-extra)))
+  (elfeed-search-set-filter (format "=%s %s" url sidebar-elfeed-filter-extra))
+  (elfeed-search-first-entry))
 
 (defun sidebar-elfeed-quit (&rest _)
   "Function called when elfeed quits.
