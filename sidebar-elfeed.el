@@ -95,7 +95,7 @@ Function similar to `sidebar-file-struct' adapted for elfeed data."
       (concat
        " "
        (pcase type
-         ('feed (icons-in-terminal sidebar-elfeed-feed-icon :height 1.1)))
+         ('feed (icons-in-terminal sidebar-elfeed-feed-icon :height 1.0)))
        " "
        (pcase type
          ('feed  title))
