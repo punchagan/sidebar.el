@@ -153,7 +153,8 @@ Function similar to `sidebar-file-struct' adapted for elfeed data."
 It removes the sidebar."
   (interactive)
   (advice-remove 'elfeed-search-quit-window 'sidebar-elfeed-quit)
-  (ignore-errors (kill-buffer (sidebar-cons-buffer-name))))
+  (ignore-errors (kill-buffer (sidebar-cons-buffer-name)))
+  (select-window (sidebar-get window-origin)))
 
 (defun sidebar-elfeed-autostart (&rest _)
   "Auto start sidebar-elfeed.
