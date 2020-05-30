@@ -85,8 +85,7 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
 (sidebar-content-provider elfeed (&rest _)
   ;; List of items processed by sidebar-elfeed-item-builder
   (sidebar-set elfeed-feeds-count (length elfeed-feeds))
-  (sidebar-elfeed-compute-unreads)
-  )
+  (sidebar-elfeed-compute-unreads))
 
 (defun sidebar-elfeed-compute-unreads ()
   "Compute all the unreads per feed."
@@ -101,6 +100,8 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
            count entry into entry-count
            count (elfeed-tagged-p 'unread entry) into unread-count
            do (puthash url (1+ feed-unread-count) feeds)
+           finally
+           (sidebar-set elfeed-unread-count unread-count)
            finally
            (cl-return
             (cl-mapcar (lambda (f)
@@ -152,15 +153,13 @@ Function similar to `sidebar-file-struct' adapted for elfeed data."
 
 (defun sidebar-elfeed-make-modeline-left ()
   "Return the string to insert in the modeline (left side)."
-  " elfeed")
+  (format " %s%s"
+          (icons-in-terminal sidebar-elfeed-feed-icon)
+          (sidebar-get elfeed-feeds-count)))
 
 (defun sidebar-elfeed-make-modeline-right ()
   "Return the string to insert in the modeline (right side)."
-  (concat
-   (number-to-string (sidebar-get elfeed-feeds-count))
-   " "
-   (icons-in-terminal sidebar-elfeed-feed-icon)
-   "  "))
+  (format " %d unreads " (sidebar-get elfeed-unread-count)))
 
 (defun sidebar-elfeed-open-line ()
   "Open the feed on the current line."
