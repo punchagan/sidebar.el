@@ -41,7 +41,7 @@
   :link '(custom-manual "(sidebar-elfeed) Top")
   :link '(info-link "(sidebar-elfeed) Customizing"))
 
-(defcustom sidebar-elfeed-width 30
+(defcustom sidebar-elfeed-width 35
   "Width of the sidebar with elfeed."
   :type 'integer
   :group 'sidebar-elfeed)
