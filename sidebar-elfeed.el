@@ -87,27 +87,33 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   (sidebar-set elfeed-feeds-count (length elfeed-feeds))
   (sidebar-elfeed-compute-unreads))
 
+(defun sidebar-elfeed--make-item (url feeds)
+  "Make content provider item for URL using FEEDS hashmap."
+  (list (cons 'feed url)
+        (cons 'unread (gethash (elfeed-feed-url url) feeds))))
+
 (defun sidebar-elfeed-compute-unreads ()
   "Compute all the unreads per feed."
   (with-current-buffer (elfeed-search-buffer)
     (elfeed-search-set-filter "+unread")
     (elfeed-search--update-list)
-    (cl-loop with feeds = (make-hash-table :test 'equal)
-             for entry in elfeed-search-entries
-             for feed = (elfeed-entry-feed entry)
-             for url = (elfeed-feed-url feed)
-             for feed-unread-count = (gethash url feeds 0)
-             count entry into entry-count
-             count (elfeed-tagged-p 'unread entry) into unread-count
-             do (puthash url (1+ feed-unread-count) feeds)
-             finally
-             (sidebar-set elfeed-unread-count unread-count)
-             finally
-             (cl-return
-              (cl-mapcar (lambda (f)
-                           (list (cons 'feed f)
-                                 (cons 'unread (gethash (elfeed-feed-url f) feeds))))
-                         (-map (lambda (item) (gethash (car item) elfeed-db-feeds)) elfeed-feeds))))))
+    (let ((valid-feeds
+           (-map (lambda (x) (gethash (car x) elfeed-db-feeds)) elfeed-feeds)))
+      (cl-loop with feeds = (make-hash-table :test 'equal)
+               for entry in elfeed-search-entries
+               for feed = (elfeed-entry-feed entry)
+               for url = (elfeed-feed-url feed)
+               for feed-unread-count = (gethash url feeds 0)
+               count entry into entry-count
+               count (elfeed-tagged-p 'unread entry) into unread-count
+               do (puthash url (1+ feed-unread-count) feeds)
+               finally
+               (sidebar-set elfeed-unread-count unread-count)
+               finally
+               (cl-return
+                (cl-mapcar
+                 (lambda (f) (sidebar-elfeed--make-item f feeds))
+                 valid-feeds))))))
 
 (defun sidebar-elfeed-item-builder (item)
   "Return an association list from ITEM.
