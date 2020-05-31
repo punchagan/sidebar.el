@@ -214,14 +214,20 @@ Function similar to `sidebar-file-struct' adapted for elfeed data."
 (defun sidebar-elfeed-open-line ()
   "Open the feed on the current line."
   (interactive)
-  (-let* (((&alist 'url url 'type type) (sidebar-find-file-from-line)))
+  (-let* (((&alist 'url url 'type type 'title title) (sidebar-find-file-from-line)))
     (select-window (sidebar-get window-origin))
     (pcase type
-      ('feed (sidebar-elfeed-open-feed url)))))
+      ('feed (sidebar-elfeed-open-feed url))
+      ('tag (sidebar-elfeed-open-tag title)))))
 
 (defun sidebar-elfeed-open-feed (url)
   "Filter to the selected feed based on URL."
   (elfeed-search-set-filter (format "=%s %s" (regexp-quote url) sidebar-elfeed-filter-extra))
+  (elfeed-search-first-entry))
+
+(defun sidebar-elfeed-open-tag (tag)
+  "Filter to the selected TAG."
+  (elfeed-search-set-filter (format "+%s %s" tag sidebar-elfeed-filter-extra))
   (elfeed-search-first-entry))
 
 (defun sidebar-elfeed-update-feed ()
