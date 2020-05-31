@@ -128,7 +128,10 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
                         (lambda (f) (sidebar-elfeed--make-item f feeds))
                         valid-feeds))))
             (sidebar--tag-groups
-             (-group-by (lambda (x) (alist-get 'tag x)) sidebar--feed-items))
+             (-sort (lambda (x y) (or (null (car y))
+                                      (and (not (null (car x)))
+                                           (string< (car x) (car y)))))
+                    (-group-by (lambda (x) (alist-get 'tag x)) sidebar--feed-items)))
             (sidebar--tag-groups-with-unreads
              (-map
               (lambda (group)
