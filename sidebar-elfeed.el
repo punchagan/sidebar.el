@@ -172,10 +172,11 @@ Function similar to `sidebar-file-struct' adapted for elfeed data."
                              (format "%s (%s)" title unread)
                            title)))
                (format "%s %s \n" (icons-in-terminal icon :height 1.0) text)))
-      ('tag (let ((icon sidebar-elfeed-tag-icon)
-                  (text (if unread
-                            (format "%s (%s)" title unread)
-                          title)))
+      ('tag (-let* ((icon sidebar-elfeed-tag-icon)
+                    (tag (or title "misc"))
+                    (text (if unread
+                              (format "%s (%s)" tag unread)
+                            tag)))
               (format "\n%s %s \n" (icons-in-terminal icon :height 1.5 :foreground "#2196F3")
                       (propertize
                        (concat (upcase (substring text 0 1)) (substring text 1))
