@@ -68,6 +68,14 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   :type 'symbol
   :group 'sidebar-elfeed)
 
+(defcustom sidebar-elfeed-tag-icon 'fa_hashtag
+  "Icon to use with feeds that have no unreads.
+To get a list of the icons names, you can run:
+ `~/.local/share/icons-in-terminal/print_icons.sh --names'
+More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
+  :type 'symbol
+  :group 'sidebar-elfeed)
+
 (defcustom sidebar-elfeed-filter-extra "#10 +unread"
   "Extra search filter params to set along with feed url."
   :type 'symbol
@@ -87,60 +95,92 @@ More info at URL `https://github.com/sebastiencs/icons-in-terminal'."
   (sidebar-set elfeed-feeds-count (length elfeed-feeds))
   (sidebar-elfeed-compute-unreads))
 
-(defun sidebar-elfeed--make-item (url feeds)
-  "Make content provider item for URL using FEEDS hashmap."
-  (list (cons 'feed url)
-        (cons 'unread (gethash (elfeed-feed-url url) feeds))))
+(defun sidebar-elfeed--make-item (data feeds)
+  "Make content provider item for DATA using FEEDS hashmap."
+  (let ((url (car data))
+        (first-tag (cadr data)))
+    (list (cons 'feed url)
+          (cons 'tag first-tag)
+          (cons 'unread (gethash (elfeed-feed-url url) feeds)))))
 
 (defun sidebar-elfeed-compute-unreads ()
   "Compute all the unreads per feed."
   (with-current-buffer (elfeed-search-buffer)
     (elfeed-search-set-filter "+unread")
     (elfeed-search--update-list)
-    (let ((valid-feeds
-           (-map (lambda (x) (gethash (car x) elfeed-db-feeds)) elfeed-feeds)))
-      (cl-loop with feeds = (make-hash-table :test 'equal)
-               for entry in elfeed-search-entries
-               for feed = (elfeed-entry-feed entry)
-               for url = (elfeed-feed-url feed)
-               for feed-unread-count = (gethash url feeds 0)
-               count entry into entry-count
-               count (elfeed-tagged-p 'unread entry) into unread-count
-               do (puthash url (1+ feed-unread-count) feeds)
-               finally
-               (sidebar-set elfeed-unread-count unread-count)
-               finally
-               (cl-return
-                (cl-mapcar
-                 (lambda (f) (sidebar-elfeed--make-item f feeds))
-                 valid-feeds))))))
+    (-let* ((valid-feeds
+             (-map (lambda (x) (list (gethash (car x) elfeed-db-feeds) (cadr x)))
+                   elfeed-feeds))
+            (sidebar--feed-items
+             (cl-loop with feeds = (make-hash-table :test 'equal)
+                      for entry in elfeed-search-entries
+                      for feed = (elfeed-entry-feed entry)
+                      for url = (elfeed-feed-url feed)
+                      for feed-unread-count = (gethash url feeds 0)
+                      count entry into entry-count
+                      count (elfeed-tagged-p 'unread entry) into unread-count
+                      do (puthash url (1+ feed-unread-count) feeds)
+                      finally
+                      (sidebar-set elfeed-unread-count unread-count)
+                      finally
+                      (cl-return
+                       (cl-mapcar
+                        (lambda (f) (sidebar-elfeed--make-item f feeds))
+                        valid-feeds))))
+            (sidebar--tag-groups
+             (-group-by (lambda (x) (alist-get 'tag x)) sidebar--feed-items))
+            (sidebar--tag-groups-with-unreads
+             (-map
+              (lambda (group)
+                (let ((tag-unread
+                       (-reduce-from
+                        (lambda (total f) (+ total
+                                             (or (alist-get 'unread f) 0)))
+                        0
+                        (cdr group))))
+                  (-replace-at
+                   0
+                   (list (cons 'tag (car group))
+                         (cons 'unread tag-unread))
+                   group)))
+              sidebar--tag-groups)))
+      (-flatten-n 1 sidebar--tag-groups-with-unreads))))
 
 (defun sidebar-elfeed-item-builder (item)
   "Return an association list from ITEM.
 Function similar to `sidebar-file-struct' adapted for elfeed data."
-  (-let* (((&alist 'feed feed 'unread unread) item))
-    (list (cons 'title (or (elfeed-feed-title feed) (elfeed-meta feed :title)))
-          (cons 'unread unread)
-          (cons 'url (elfeed-feed-url feed))
-          (cons 'type 'feed)
-          (cons 'line 0))))
+  (-let* (((&alist 'feed feed 'unread unread 'tag tag) item))
+    (cond ((null feed)
+           (list (cons 'title tag)
+                 (cons 'unread unread)
+                 (cons 'type 'tag)
+                 (cons 'line 0)))
+          (t (list (cons 'title (or (elfeed-feed-title feed) (elfeed-meta feed :title)))
+                   (cons 'unread unread)
+                   (cons 'url (elfeed-feed-url feed))
+                   (cons 'type 'feed)
+                   (cons 'line 0))))))
 
 (sidebar-print-function elfeed (item)
   "ITEM."
   (-let* (((&alist 'title title 'type type 'unread unread) item))
-    (if (eq type 'separator)
-        (ignore (overlay-put (make-overlay (point) (point)) 'after-string "\n"))
-      (concat
-       " "
-       (pcase type
-         ('feed (let ((icon (if unread sidebar-elfeed-unread-feed-icon
-                              sidebar-elfeed-feed-icon)))
-                  (icons-in-terminal icon :height 1.0))))
-       " "
-       (pcase type
-         ('feed (if unread (format "%s (%s)" title unread)
-                  title)))
-       "\n"))))
+    (pcase type
+      ('feed (let ((icon (if unread
+                             sidebar-elfeed-unread-feed-icon
+                           sidebar-elfeed-feed-icon))
+                   (text (if unread
+                             (format "%s (%s)" title unread)
+                           title)))
+               (format "%s %s \n" (icons-in-terminal icon :height 1.0) text)))
+      ('tag (let ((icon sidebar-elfeed-tag-icon)
+                  (text (if unread
+                            (format "%s (%s)" title unread)
+                          title)))
+              (format "\n%s %s \n" (icons-in-terminal icon :height 1.5 :foreground "#2196F3")
+                      (propertize
+                       (concat (upcase (substring text 0 1)) (substring text 1))
+                       'display '(raise 0.07)
+                       'face '(:height 1.1 :foreground"#2196F3"))))))))
 
 (defun sidebar-elfeed-make-header ()
   "Return the string to insert in the sidebar header."
