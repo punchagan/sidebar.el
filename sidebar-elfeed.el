@@ -172,7 +172,9 @@ Function similar to `sidebar-file-struct' adapted for elfeed data."
                              sidebar-elfeed-unread-feed-icon
                            sidebar-elfeed-feed-icon))
                    (text (if unread
-                             (format "%s (%s)" title unread)
+                             (propertize
+                              (format "%s (%s)" title unread)
+                              'face 'bold)
                            title)))
                (format "%s %s \n" (icons-in-terminal icon :height 1.0) text)))
       ('tag (-let* ((icon sidebar-elfeed-tag-icon)
