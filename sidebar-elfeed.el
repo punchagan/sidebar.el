@@ -168,14 +168,18 @@ Function similar to `sidebar-file-struct' adapted for elfeed data."
   "ITEM."
   (-let* (((&alist 'title title 'type type 'unread unread) item))
     (pcase type
-      ('feed (let ((icon (if unread
-                             sidebar-elfeed-unread-feed-icon
-                           sidebar-elfeed-feed-icon))
+      ('feed (let* ((icon (if unread
+                              sidebar-elfeed-unread-feed-icon
+                            sidebar-elfeed-feed-icon))
+                    (n (if unread 25 30))
+                    (-title (if (< n (length title))
+                                (format "%s..." (substring title 0 (- n 3)))
+                              title))
                    (text (if unread
                              (propertize
-                              (format "%s (%s)" title unread)
+                              (format "%s (%s)" -title unread)
                               'face 'bold)
-                           title)))
+                           -title)))
                (format "%s %s \n" (icons-in-terminal icon :height 1.0) text)))
       ('tag (-let* ((icon sidebar-elfeed-tag-icon)
                     (tag (or title "misc"))
